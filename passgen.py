@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """
-PassGen-V1
-Professional Password Generator for Termux (developers edition)
-Author: NEXTGEN (remake)
+██████╗  █████╗ ███████╗███████╗ ██████╗ ███████╗███╗   ██╗
+██╔══██╗██╔══██╗╚══███╔╝██╔════╝██╔═══██╗██╔════╝████╗  ██║
+██████╔╝███████║  ███╔╝ █████╗  ██║   ██║█████╗  ██╔██╗ ██║
+██╔═══╝ ██╔══██║ ███╔╝  ██╔══╝  ██║   ██║██╔══╝  ██║╚██╗██║
+██║     ██║  ██║███████╗███████╗╚██████╔╝███████╗██║ ╚████║
+╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝
+          PassGen-V1 — Professional Hacker-style Password Generator
+          Developer: NEXORA TECH | Termux & Linux Compatible
 """
 
 import os
@@ -25,28 +30,39 @@ PASSWORDS_FILE = os.path.join(BASE_DIR, "passwords.txt")
 WORDLIST_FILE = os.path.join(DATA_DIR, "wordlist.txt")
 BANNER_FILE = os.path.join(BASE_DIR, "assets", "banner.txt")
 
-# Channels (labels shown in menu; link opens when selected)
+# Channels
 WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb6K4nw96H4LOMaOLF22"
 YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@nexoratechn"
 
 # Termux utilities
 HAS_TERMUX_API = shutil.which("termux-clipboard-set") is not None or shutil.which("termux-open-url") is not None
 
+# ----------------------------
 # Ensure data folder and files exist
+# ----------------------------
 os.makedirs(DATA_DIR, exist_ok=True)
 if not os.path.exists(USERS_COUNT_FILE):
     with open(USERS_COUNT_FILE, "w") as f:
         f.write("0")
 
-# Provide a small wordlist to create 'realistic' passwords
 DEFAULT_WORDLIST = [
-    "admin", "user", "pass", "dev", "tech", "nexora", "next", "secure",
-    "secret", "login", "qwerty", "alpha", "omega", "master", "access",
-    "project", "cloud", "root", "sys", "data", "code", "node", "java"
+    "admin","user","pass","dev","tech","nexora","next","secure",
+    "secret","login","qwerty","alpha","omega","master","access",
+    "project","cloud","root","sys","data","code","node","java"
 ]
-if not os.path.exists(WORDLIST_FILE):
-    with open(WORDLIST_FILE, "w") as f:
-        f.write("\n".join(DEFAULT_WORDLIST))
+
+def ensure_wordlist():
+    """Make sure wordlist file exists and has content"""
+    if not os.path.exists(WORDLIST_FILE):
+        with open(WORDLIST_FILE, "w") as f:
+            f.write("\n".join(DEFAULT_WORDLIST))
+    # Load content
+    with open(WORDLIST_FILE, "r") as f:
+        words = [w.strip() for w in f if w.strip()]
+    if not words:
+        # fallback if empty
+        words = DEFAULT_WORDLIST
+    return words
 
 # ----------------------------
 # Utilities
@@ -66,14 +82,6 @@ def increment_usage_count():
     with open(USERS_COUNT_FILE, "w") as f:
         f.write(str(cnt))
 
-def load_wordlist():
-    try:
-        with open(WORDLIST_FILE, "r") as f:
-            return [w.strip() for w in f if w.strip()]
-    except Exception:
-        return DEFAULT_WORDLIST
-
-# Small spinner for UX
 def spinner(duration=0.8, msg="Processing"):
     end = time.time() + duration
     spin = "|/-\\"
@@ -85,7 +93,7 @@ def spinner(duration=0.8, msg="Processing"):
         i += 1
     sys.stdout.write("\r" + " " * (len(msg) + 10) + "\r")
 
-# Display banner (attempt to load assets/banner.txt)
+# Display banner
 def banner():
     clear()
     banner_text = None
@@ -98,150 +106,121 @@ def banner():
 
     if not banner_text:
         banner_text = r"""
- ____                                 ____  _____  __   __
-|  _ \ __ _ ___ ___  ___  _ __ ___   / ___|| ____| \ \ / /
-| |_) / _` / __/ __|/ _ \| '__/ _ \  \___ \|  _|    \ V / 
-|  __/ (_| \__ \__ \ (_) | | |  __/   ___) | |___    | |  
-|_|   \__,_|___/___/\___/|_|  \___|  |____/|_____|   |_|  
-               Professional Password Generator - PassGen-V1
+  ________                      ________                       
+ /  _____/_____    _____   ____  \_____  \___  __ ___________   
+/   \  ___\__  \  /     \_/ __ \  /   |   \  \/ // __ \_  __ \  
+\    \_\  \/ __ \|  Y Y  \  ___/ /    |    \   /\  ___/|  | \/  
+ \______  (____  /__|_|  /\___  >\_______  /\_/  \___  >__|     
+        \/     \/      \/     \/         \/          \/         
 """
     print("\033[1;36m" + banner_text + "\033[0m")
-    print("\033[1;33mTool: PassGen-V1  •  Developer: NEXTGEN TECH\033[0m")
+    print("\033[1;33mTool: PassGen-V1  •  Developer: NEXORA-TECH\033[0m")
     print(f"\033[1;32mUsage count:\033[0m {read_usage_count()}  •  {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
-    print("\n\033[1;31mDISCLAIMER:\033[0m This tool is for development/testing only. Do NOT use it to breach accounts, "
-          "attack systems, or for illegal activity. The author is not responsible for misuse.\n")
+    print("\n\033[1;31mDISCLAIMER:\033[0m This tool is for development/testing only. "
+          "Do NOT use it for illegal activity. Author not responsible.\n")
 
 # ----------------------------
-# Password generation strategies
+# Password generation
 # ----------------------------
-
-# 1) Strong random password generator (secure)
 def gen_strong_password(length=12):
     if length < 4:
         length = 4
-    # ensure at least one from each set
-    sets = [
-        string.ascii_lowercase,
-        string.ascii_uppercase,
-        string.digits,
-        "!@#$%&*?-_"
-    ]
+    sets = [string.ascii_lowercase, string.ascii_uppercase, string.digits, "!@#$%&*?-_"]
     pw = [random.choice(s) for s in sets]
     allchars = string.ascii_letters + string.digits + "!@#$%&*?-_"
     pw += [random.choice(allchars) for _ in range(length - len(pw))]
     random.shuffle(pw)
     return "".join(pw)
 
-# 2) "Realistic" password generator (mimics common human patterns)
 def gen_realistic_password():
-    words = load_wordlist()
+    words = ensure_wordlist()
     word = random.choice(words)
-    year = random.choice([str(y) for y in range(1998, 2026)])
-    suffixes = ["!", "!", "123", "@", "#", "_", "2023", "2024", "01"]
-    leet_map = str.maketrans("aeiosg", "43105g")
+    year = str(random.randint(1998,2025))
+    suffixes = ["!", "123", "@", "#", "_", "2023", "2024"]
     style = random.choice(["word+num", "word+year", "leet+num", "word+symbol", "mixed"])
     if style == "word+num":
-        return word + str(random.randint(1, 9999))
+        return word + str(random.randint(1,9999))
     if style == "word+year":
         return word + year
     if style == "leet+num":
-        return word.translate(leet_map) + str(random.randint(10,999))
+        tr = str.maketrans("aeios", "43105")
+        return word.translate(tr) + str(random.randint(10,99))
     if style == "word+symbol":
         return word + random.choice(suffixes)
-    # mixed: word + Year + Symbol + digit
     return f"{word}{year}{random.choice(suffixes)}"
 
-# 3) Create variations from a base password (user-specified)
 def gen_variations_from(base, count=10):
     out = []
     for _ in range(count):
-        # randomly insert or append small random tokens
-        choice_type = random.choice(["append", "prepend", "insert", "leet", "mix"])
-        if choice_type == "append":
-            token = str(random.randint(0, 9999)) + random.choice(["!", "@", "#", "_"])
-            out.append(base + token)
-        elif choice_type == "prepend":
-            token = random.choice(["$", "dev", "x", "pro"])
-            out.append(token + base)
-        elif choice_type == "insert":
-            pos = random.randint(0, len(base))
-            token = str(random.randint(10,99))
-            out.append(base[:pos] + token + base[pos:])
-        elif choice_type == "leet":
-            tr = str.maketrans("aeios", "43105")
+        choice_type = random.choice(["append","prepend","insert","leet","mix"])
+        if choice_type=="append":
+            token = str(random.randint(0,9999))+random.choice(["!","@","#","_"])
+            out.append(base+token)
+        elif choice_type=="prepend":
+            token = random.choice(["$","dev","x","pro"])
+            out.append(token+base)
+        elif choice_type=="insert":
+            pos=random.randint(0,len(base))
+            token=str(random.randint(10,99))
+            out.append(base[:pos]+token+base[pos:])
+        elif choice_type=="leet":
+            tr=str.maketrans("aeios","43105")
             out.append(base.translate(tr))
         else:
-            # mix with a realistic
-            out.append(base + random.choice([gen_realistic_password(), gen_strong_password(4)]))
+            out.append(base+random.choice([gen_realistic_password(),gen_strong_password(4)]))
     return out
 
-# 4) Bulk generation wrapper that yields (streaming to file)
 def generate_passwords(mode="random", how_many=2000, base=None, realistic_ratio=0.3):
-    """
-    mode: 'random' or 'custom'
-    realistic_ratio: fraction of outputs generated using 'realistic' patterns
-    """
-    if how_many <= 0:
-        return []
-
-    # We'll write directly to file to handle millions without memory blow-up
-    with open(PASSWORDS_FILE, "w", encoding="utf-8") as f:
+    with open(PASSWORDS_FILE,"w",encoding="utf-8") as f:
         for i in range(how_many):
-            if mode == "custom" and base:
-                # produce one variation for each slot (keeps variety)
-                pwd = gen_variations_from(base, 1)[0]
+            if mode=="custom" and base:
+                pwd = gen_variations_from(base,1)[0]
             else:
-                # decide whether to produce realistic or strong random
-                if random.random() < realistic_ratio:
+                if random.random()<realistic_ratio:
                     pwd = gen_realistic_password()
                 else:
-                    length = random.randint(8, 16)
+                    length=random.randint(8,16)
                     pwd = gen_strong_password(length)
-            f.write(pwd + "\n")
-            # optional tiny spinner for big jobs every N items
-            if (i + 1) % 500 == 0:
-                spinner(0.15, msg=f"generated {i+1}/{how_many}")
+            f.write(pwd+"\n")
+            if (i+1)%500==0:
+                spinner(0.15,msg=f"generated {i+1}/{how_many}")
     return PASSWORDS_FILE
 
 # ----------------------------
-# Post-generation utilities
+# Post-generation actions
 # ----------------------------
 def copy_to_clipboard():
     if shutil.which("termux-clipboard-set"):
-        # Use termux cli to set clipboard
         p = subprocess.Popen(["termux-clipboard-set"], stdin=subprocess.PIPE)
         try:
-            with open(PASSWORDS_FILE, "rb") as f:
+            with open(PASSWORDS_FILE,"rb") as f:
                 p.communicate(f.read())
-            print("\n[✔] Passwords copied to clipboard (Termux clipboard).")
+            print("\n[✔] Passwords copied to clipboard (Termux).")
         except Exception as e:
-            print("[!] Failed to copy via termux-clipboard-set:", e)
+            print("[!] Clipboard failed:", e)
     else:
-        # fallback: try python clipboard via pyperclip if available
         try:
             import pyperclip
-            with open(PASSWORDS_FILE, "r", encoding="utf-8") as f:
-                data = f.read()
-            pyperclip.copy(data)
-            print("\n[✔] Passwords copied to clipboard via pyperclip.")
+            with open(PASSWORDS_FILE,"r",encoding="utf-8") as f:
+                pyperclip.copy(f.read())
+            print("\n[✔] Passwords copied via pyperclip.")
         except Exception:
-            print("\n[!] Clipboard not available. Install termux-api or pyperclip to enable copy.")
+            print("\n[!] Clipboard unavailable. Install termux-api or pyperclip.")
 
-def open_link(label, url):
+def open_link(label,url):
     print(f"\nOpening {label} ...")
     if shutil.which("termux-open-url"):
-        subprocess.run(["termux-open-url", url])
+        subprocess.run(["termux-open-url",url])
     else:
-        # fallback to webbrowser
         try:
             import webbrowser
             webbrowser.open(url)
-        except Exception as e:
-            print("[!] Unable to open link automatically. URL:", url)
+        except:
+            print(f"[!] Could not open automatically. URL: {url}")
 
 def make_zip():
-    zname = os.path.join(BASE_DIR, f"passwords_{int(time.time())}.zip")
-    with zipfile.ZipFile(zname, 'w', zipfile.ZIP_DEFLATED) as z:
+    zname=os.path.join(BASE_DIR,f"passwords_{int(time.time())}.zip")
+    with zipfile.ZipFile(zname,'w',zipfile.ZIP_DEFLATED) as z:
         z.write(PASSWORDS_FILE, arcname=os.path.basename(PASSWORDS_FILE))
     print(f"\n[✔] Zipped passwords to: {zname}")
     return zname
@@ -257,91 +236,79 @@ def post_generation_menu():
         print(" [3] See YouTube channel")
         print(" [4] Download as ZIP")
         print(" [0] Back to main menu / Exit")
-        choice = input("\nSelect option: ").strip()
-        if choice == "1":
+        choice=input("\nSelect option: ").strip()
+        if choice=="1":
             copy_to_clipboard()
-        elif choice == "2":
-            # label only shown; then redirect
-            print("Redirecting to WhatsApp channel ...")
-            open_link("WhatsApp channel", WHATSAPP_CHANNEL)
-        elif choice == "3":
-            print("Opening YouTube channel ...")
-            open_link("YouTube channel", YOUTUBE_CHANNEL_URL)
-        elif choice == "4":
+        elif choice=="2":
+            open_link("WhatsApp channel",WHATSAPP_CHANNEL)
+        elif choice=="3":
+            open_link("YouTube channel",YOUTUBE_CHANNEL_URL)
+        elif choice=="4":
             make_zip()
-        elif choice == "0":
+        elif choice=="0":
             return
         else:
-            print("Invalid option. Try again.")
+            print("Invalid option.")
 
 def main_menu():
     increment_usage_count()
     while True:
         banner()
-        # Professional-sounding labels (as requested)
         print("\n\033[1;36mMain features:\033[0m")
         print(" [1] Generate random (Secure & Realistic mix)")
         print(" [2] Suggest / Create variations from my password")
         print(" [0] Exit")
 
-        choice = input("\nChoose feature: ").strip()
-        if choice == "1":
-            # ask how many
+        choice=input("\nChoose feature: ").strip()
+        if choice=="1":
             try:
-                val = input("\nHow many passwords do you want to generate? (enter any positive number, e.g. 2000): ").strip()
-                count = int(val)
-                if count <= 0:
-                    print("Number must be positive.")
+                val=input("\nHow many passwords to generate? (e.g. 2000): ").strip()
+                count=int(val)
+                if count<=0:
+                    print("Must be positive.")
                     continue
-            except Exception:
-                print("Invalid number. Try again.")
-                continue
-
-            print(f"\nGenerating {count} passwords — this may take a moment for very large numbers.")
-            spinner(0.5, "Starting generation")
-            generate_passwords(mode="random", how_many=count, realistic_ratio=0.36)
-            print(f"\n[✔] Done. Saved to {PASSWORDS_FILE}")
-            post_generation_menu()
-
-        elif choice == "2":
-            base = input("\nEnter your base password (will be used to create variations): ").strip()
-            if not base:
-                print("Base password cannot be empty.")
-                continue
-            try:
-                val = input("How many variations to generate? (enter any positive number): ").strip()
-                count = int(val)
-                if count <= 0:
-                    print("Number must be positive.")
-                    continue
-            except Exception:
+            except:
                 print("Invalid number.")
                 continue
-
-            print(f"\nGenerating {count} variations based on your password ...")
-            spinner(0.5, "Starting generation")
-            # If count is small we can do them via gen_variations_from; for large, write progressively
-            with open(PASSWORDS_FILE, "w", encoding="utf-8") as f:
-                for i in range(count):
-                    # produce 1 variation per loop to get variety
-                    v = gen_variations_from(base, 1)[0]
-                    f.write(v + "\n")
-                    if (i + 1) % 500 == 0:
-                        spinner(0.12, msg=f"generated {i+1}/{count}")
-
-            print(f"\n[✔] Done. Variations saved to {PASSWORDS_FILE}")
+            print(f"\nGenerating {count} passwords...")
+            spinner(0.5,"Starting generation")
+            generate_passwords(mode="random",how_many=count,realistic_ratio=0.36)
+            print(f"\n[✔] Done. Saved to {PASSWORDS_FILE}")
             post_generation_menu()
-
-        elif choice == "0":
+        elif choice=="2":
+            base=input("\nEnter base password: ").strip()
+            if not base:
+                print("Cannot be empty.")
+                continue
+            try:
+                val=input("How many variations to generate?: ").strip()
+                count=int(val)
+                if count<=0:
+                    print("Must be positive.")
+                    continue
+            except:
+                print("Invalid number.")
+                continue
+            print(f"\nGenerating {count} variations...")
+            spinner(0.5,"Starting generation")
+            with open(PASSWORDS_FILE,"w",encoding="utf-8") as f:
+                for i in range(count):
+                    v=gen_variations_from(base,1)[0]
+                    f.write(v+"\n")
+                    if (i+1)%500==0:
+                        spinner(0.12,msg=f"generated {i+1}/{count}")
+            print(f"\n[✔] Done. Saved to {PASSWORDS_FILE}")
+            post_generation_menu()
+        elif choice=="0":
             print("\nExiting PassGen-V1. Bye.")
             break
         else:
-            print("Invalid option — choose 1, 2, or 0.")
+            print("Invalid choice — choose 1, 2, or 0.")
 
 # ----------------------------
 # Entry
 # ----------------------------
-if __name__ == "__main__":
+if __name__=="__main__":
     try:
         main_menu()
     except KeyboardInterrupt:
